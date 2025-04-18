@@ -21,6 +21,14 @@ void mergeSort(int arr[], int l, int r)
 			f1.get();
 			mergeSort(arr, mid + 1, r);
 			merge(arr, l, r, mid);
+			//Как вариант:
+			//mid = (l + r) / 2;
+			//std::future<void> f1 = std::async(std::launch::async, [&]() {mergeSort(arr, l, mid); });
+			//std::future<void> f2 = std::async(std::launch::async, [&]() {mergeSort(arr, mid+1, r); });
+			//f1.get();
+			//f2.get();
+			//merge(arr, l, r, mid);
+
 		}
 	}
 	else
