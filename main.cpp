@@ -64,7 +64,7 @@ int main()
 {
 	setlocale(LC_ALL, "Rus");
 	srand(0);
-	int arr_size = 5000000;
+	int arr_size = 50000000;
 	int* arr = new int[arr_size];
 	std::cout << "Создание исходного массива " << std::endl;
 	for (size_t i = 0; i < arr_size; i++)
@@ -92,7 +92,7 @@ int main()
 	flag = true;
 	for (size_t i = 0; i < arr_size; i++)
 	{
-		arr[i] = rand() % 5000;
+		arr[i] = rand() % 50000;
 	}
 	std::cout << "Запуск многопоточной сортировки: " << std::endl;
 	auto _start = std::chrono::high_resolution_clock::now();
@@ -100,7 +100,6 @@ int main()
 	auto _finish = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> _elapsed = _finish - _start;
 	std::cout << "Время выполнения сортировки: " << _elapsed.count() << " сек." << std::endl;
-
 
 	for (long i = 0; i < arr_size - 1; i++) // Проверка состояния массива:
 	{
