@@ -1,130 +1,114 @@
-﻿#include <iostream>
+#include <iostream>
 #include <future>
 #include <chrono>
 #include <thread>
 #include <random>
 #include <ctime>
 
-bool flag = true;
-
-void merge(int arr[], int l, int r, int m); //l - начало (слева), m - середина, r - конец (справа);
-
-void mergeSort(int arr[], int l, int r)
-{
-	int mid{};
-	if (flag == true)
-	{
-		if (l < r)
-		{
-			mid = (l + r) / 2;
-			std::future<void> f1 = std::async(std::launch::async, [&]() {mergeSort(arr, l, mid); });
-			f1.get();
-			mergeSort(arr, mid + 1, r);
-			merge(arr, l, r, mid);
-			//Как вариант:
-			//mid = (l + r) / 2;
-			//std::future<void> f1 = std::async(std::launch::async, [&]() {mergeSort(arr, l, mid); });
-			//std::future<void> f2 = std::async(std::launch::async, [&]() {mergeSort(arr, mid+1, r); });
-			//f1.get();
-			//f2.get();
-			//merge(arr, l, r, mid);
-
-		}
-	}
-	else
-	{
-		if (l < r)
-		{
-			mergeSort(arr, l, mid);
-			mergeSort(arr, mid + 1, r);
-			merge(arr, l, r, mid);
-		}
-	}
-}
-
-void merge(int* arr, int l, int r, int m)
+bool flag = false;
+void merge(int* arr, int l, int m, int r)
 {
 	int nl = m - l + 1;
 	int nr = r - m;
-	int* left = new int[nl];	// создаем временные массивы
+	int* left = new int[nl];
 	int* right = new int[nr];
-
-	for (int i = 0; i < nl; i++) 	// копируем данные во временные массивы
-	{
+	for (int i = 0; i < nl; i++)
 		left[i] = arr[l + i];
-	}
 	for (int j = 0; j < nr; j++)
-	{
-		right[j] = arr[m + 1 + j];
-	}
-
+		right[j] = arr[m + j + 1];
 	int i = 0, j = 0;
-	int k = l;  // начало левой части
-
+	int k = l;
 	while (i < nl && j < nr)
 	{
-		if (left[i] <= right[j]) // записываем минимальные элементы обратно во входной массив
+		if (left[i] < right[j])
 		{
-			arr[k] = left[i];
-			i++;
+			arr[k++] = left[i++];
 		}
 		else
 		{
-			arr[k] = right[j];
-			j++;
+			arr[k++] = right[j++];
 		}
-		k++;
 	}
-	while (i < nl)// записываем оставшиеся элементы левой части
-	{
-		arr[k] = left[i];
-		i++;
-		k++;
-	}
-	while (j < nr) // записываем оставшиеся элементы правой части
-	{
-		arr[k] = right[j];
-		j++;
-		k++;
-	}
+
+	while (i < nl)
+		arr[k++] = left[i++];
+
+	while (j < nr)
+		arr[k++] = right[j++];
+
 	delete[] left;
 	delete[] right;
+}
+
+void mergeSort(int* arr, int l, int r)
+{
+	if (l >= r)
+		return;
+
+	int m = (l + r - 1) / 2;
+	if (flag && (m - l > 100000))
+	{
+		std::future<void> f = std::async(std::launch::async, [&]() { mergeSort(arr, l, m); });
+		f.get();
+		mergeSort(arr, m + 1, r);
+	}
+	else
+	{
+		mergeSort(arr, l, m);
+		mergeSort(arr, m + 1, r);
+	}
+	merge(arr, l, m, r);
 }
 
 int main()
 {
 	setlocale(LC_ALL, "Rus");
-
 	srand(0);
-	int arr_size = 20;
+	int arr_size = 5000000;
 	int* arr = new int[arr_size];
-	for (long i = 0; i < arr_size; i++) {
-		arr[i] = rand() % 100;
-	}
-	std::cout << "Исходный массив: \n";
-	for (int i = 0; i < arr_size; i++)
+	std::cout << "Создание исходного массива " << std::endl;
+	for (size_t i = 0; i < arr_size; i++)
 	{
-		std::cout << arr[i] << "  ";
+		arr[i] = rand() % 50000;
 	}
-	std::cout << '\n';
 
+	std::cout << "Запуск однопоточной сортировки..." << std::endl;
+	auto start = std::chrono::high_resolution_clock::now();
 	mergeSort(arr, 0, arr_size - 1);
-	std::cout << "\n\nМногопоточный отсортированный массив: \n";
-	for (int i = 0; i < arr_size; i++)
-	{
-		std::cout << arr[i] << "  ";
-	}
-	std::cout << '\n';
+	auto finish = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsed = finish - start;
+	std::cout << "Время выполнения сортировки: " << elapsed.count() << " сек." << std::endl;
 
-	flag == false;
-	mergeSort(arr, 0, arr_size - 1);
-	std::cout << "\n\nОднопоточный отсортированный массив: \n";
-	for (int i = 0; i < arr_size; i++)
+	for (long i = 0; i < arr_size - 1; i++) //Проверка состояния массива
 	{
-		std::cout << arr[i] << "  ";
+		if (arr[i] > arr[i + 1]) 
+		{
+			std::cout << "Массив не отсортирован!" << std::endl;
+			break;
+		}
 	}
-	std::cout << '\n';
-	
+
+	std::cout << "\nСоздание второго исходного массива: " << std::endl;
+	flag = true;
+	for (size_t i = 0; i < arr_size; i++)
+	{
+		arr[i] = rand() % 5000;
+	}
+	std::cout << "Запуск многопоточной сортировки: " << std::endl;
+	auto _start = std::chrono::high_resolution_clock::now();
+	mergeSort(arr, 0, arr_size - 1);
+	auto _finish = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> _elapsed = _finish - _start;
+	std::cout << "Время выполнения сортировки: " << _elapsed.count() << " сек." << std::endl;
+
+
+	for (long i = 0; i < arr_size - 1; i++) // Проверка состояния массива:
+	{
+		if (arr[i] > arr[i + 1]) {
+			std::cout << "Массив не отсортирован! " << std::endl;
+			break;
+		}
+	}
 	delete[] arr;
 	return 0;
 }
